@@ -125,9 +125,20 @@ Lista chiara di cosa richiedere al commercialista per completare l'analisi:
 3 domande operative specifiche basate sui numeri trovati — non domande generiche.
 
 ## 9. SINTESI DIREZIONALE
-4 righe massimo.
-Giudizio sulla traiettoria attuale:
-IN LINEA CON OBIETTIVI / ATTENZIONE RICHIESTA / INTERVENTO URGENTE NECESSARIO
+Scegli UNO dei tre giudizi e usa esattamente il blocco HTML corrispondente,
+seguito da un paragrafo di testo normale (max 4 righe, nessun grassetto, nessun maiuscolo):
+
+Se la situazione è positiva:
+<div class="verdict IN_LINEA">IN LINEA CON GLI OBIETTIVI</div>
+<p>[testo descrittivo della situazione, tono professionale e diretto]</p>
+
+Se richiede attenzione:
+<div class="verdict ATTENZIONE">ATTENZIONE RICHIESTA</div>
+<p>[testo descrittivo della situazione, tono professionale e diretto]</p>
+
+Se richiede intervento urgente:
+<div class="verdict URGENTE">INTERVENTO URGENTE NECESSARIO</div>
+<p>[testo descrittivo della situazione, tono professionale e diretto]</p>
 
 ## 10. PASSO SUCCESSIVO CONSIGLIATO (OBBLIGATORIO — includi SEMPRE, è parte integrante del report)
 Copia questo blocco HTML esattamente come scritto in fondo al report,

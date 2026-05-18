@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RadarFinanziario — Controllo di gestione infrannuale per PMI</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy: #1a2744;
+      --navy-light: #243460;
+      --green: #16a34a;
+      --green-light: #dcfce7;
+      --amber: #d97706;
+      --amber-light: #fef3c7;
+      --red: #dc2626;
+      --red-light: #fee2e2;
+      --gray-50: #f8fafc;
+      --gray-100: #f1f5f9;
+      --gray-200: #e2e8f0;
+      --gray-300: #cbd5e1;
+      --gray-600: #475569;
+      --gray-700: #334155;
+      --gray-900: #0f172a;
+      --white: #ffffff;
+      --radius: 10px;
+      --shadow: 0 4px 24px rgba(26,39,68,0.10);
+      --shadow-lg: 0 8px 40px rgba(26,39,68,0.16);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: var(--gray-50);
+      color: var(--gray-900);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--navy);
+      color: var(--white);
+      padding: 24px 0 20px;
+      text-align: center;
+      box-shadow: var(--shadow-lg);
+    }
+    .logo {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+    .logo span { color: #4ade80; }
+    .tagline {
+      font-size: 0.95rem;
+      color: #94a3b8;
+      margin-top: 4px;
+      font-weight: 400;
+    }
+
+    /* ── MAIN LAYOUT ── */
+    main {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 32px 16px 64px;
+    }
+
+    /* ── BANNERS ── */
+    .banner {
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      margin-bottom: 14px;
+      font-size: 0.88rem;
+      line-height: 1.5;
+    }
+    .banner-disclaimer {
+      background: var(--amber-light);
+      border-left: 4px solid var(--amber);
+      color: #78350f;
+    }
+    .banner-privacy {
+      background: #eff6ff;
+      border-left: 4px solid #3b82f6;
+      color: #1e40af;
+    }
+
+    /* ── UPLOAD ZONE ── */
+    .upload-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 32px 28px;
+      margin: 24px 0;
+    }
+    .upload-card h2 {
+      font-size: 1.15rem;
+      color: var(--navy);
+      margin-bottom: 18px;
+      font-weight: 700;
+    }
+
+    .drop-zone {
+      border: 2.5px dashed var(--gray-300);
+      border-radius: var(--radius);
+      padding: 48px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      background: var(--gray-50);
+      position: relative;
+    }
+    .drop-zone:hover,
+    .drop-zone.drag-over {
+      border-color: var(--navy);
+      background: #eef2ff;
+    }
+    .drop-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+    .drop-icon {
+      font-size: 3rem;
+      margin-bottom: 12px;
+      display: block;
+    }
+    .drop-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--navy);
+      margin-bottom: 6px;
+    }
+    .drop-hint {
+      font-size: 0.85rem;
+      color: var(--gray-600);
+    }
+    .drop-hint strong {
+      color: var(--navy);
+    }
+    .file-types {
+      margin-top: 10px;
+      font-size: 0.8rem;
+      color: var(--gray-600);
+    }
+    .badge {
+      display: inline-block;
+      background: var(--navy);
+      color: var(--white);
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin: 2px;
+    }
+    .badge-green { background: var(--green); }
+
+    .file-selected {
+      margin-top: 14px;
+      padding: 10px 14px;
+      background: var(--green-light);
+      border-radius: 8px;
+      font-size: 0.88rem;
+      color: #14532d;
+      display: none;
+      align-items: center;
+      gap: 8px;
+    }
+    .file-selected.visible { display: flex; }
+
+    .btn-analyze {
+      display: block;
+      width: 100%;
+      margin-top: 18px;
+      padding: 14px;
+      background: var(--navy);
+      color: var(--white);
+      border: none;
+      border-radius: var(--radius);
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      letter-spacing: 0.3px;
+    }
+    .btn-analyze:hover:not(:disabled) {
+      background: var(--navy-light);
+      transform: translateY(-1px);
+    }
+    .btn-analyze:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* ── SPINNER ── */
+    .spinner-wrap {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      padding: 40px 0;
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin: 24px 0;
+    }
+    .spinner-wrap.visible { display: flex; }
+
+    .spinner {
+      width: 52px;
+      height: 52px;
+      border: 5px solid var(--gray-200);
+      border-top-color: var(--navy);
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .spinner-msg {
+      font-size: 0.95rem;
+      color: var(--gray-600);
+      font-weight: 500;
+    }
+    .spinner-sub {
+      font-size: 0.82rem;
+      color: var(--gray-300);
+    }
+
+    /* ── ERROR BOX ── */
+    .error-box {
+      display: none;
+      background: var(--red-light);
+      border-left: 4px solid var(--red);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      color: #7f1d1d;
+      font-size: 0.92rem;
+      margin: 24px 0;
+    }
+    .error-box.visible { display: block; }
+    .error-box strong { display: block; margin-bottom: 4px; }
+
+    /* ── REPORT ── */
+    .report-wrap {
+      display: none;
+      margin: 24px 0;
+    }
+    .report-wrap.visible { display: block; }
+
+    .report-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .report-actions h2 {
+      font-size: 1.1rem;
+      color: var(--navy);
+      font-weight: 700;
+    }
+    .btn-print {
+      padding: 9px 20px;
+      background: var(--green);
+      color: var(--white);
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-print:hover { background: #15803d; }
+
+    .btn-reset {
+      padding: 9px 20px;
+      background: transparent;
+      color: var(--navy);
+      border: 2px solid var(--navy);
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+    .btn-reset:hover { background: var(--navy); color: var(--white); }
+
+    /* ── REPORT CONTENT STYLES ── */
+    .report-content {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 36px 40px;
+      line-height: 1.7;
+    }
+
+    .report-content h2 {
+      color: var(--navy);
+      font-size: 1.3rem;
+      font-weight: 800;
+      margin: 28px 0 12px;
+      padding-bottom: 8px;
+      border-bottom: 3px solid var(--navy);
+    }
+    .report-content h2:first-child { margin-top: 0; }
+
+    .report-content h3 {
+      color: var(--navy-light);
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin: 20px 0 8px;
+    }
+
+    .report-content p {
+      color: var(--gray-700);
+      margin-bottom: 10px;
+      font-size: 0.95rem;
+    }
+
+    .report-content ul {
+      margin: 8px 0 14px 20px;
+    }
+    .report-content li {
+      color: var(--gray-700);
+      font-size: 0.93rem;
+      margin-bottom: 5px;
+    }
+
+    .report-content table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0 20px;
+      font-size: 0.9rem;
+    }
+    .report-content th {
+      background: var(--navy);
+      color: var(--white);
+      padding: 10px 14px;
+      text-align: left;
+      font-weight: 600;
+    }
+    .report-content td {
+      padding: 9px 14px;
+      border-bottom: 1px solid var(--gray-200);
+      color: var(--gray-700);
+    }
+    .report-content tr:nth-child(even) td { background: var(--gray-50); }
+    .report-content tr:hover td { background: #eef2ff; }
+
+    /* ── FOOTER ── */
+    footer {
+      text-align: center;
+      padding: 24px 16px;
+      font-size: 0.8rem;
+      color: var(--gray-600);
+      border-top: 1px solid var(--gray-200);
+      background: var(--white);
+    }
+
+    /* ── PRINT ── */
+    @media print {
+      header, .banner, .upload-card, .spinner-wrap,
+      .error-box, .report-actions, footer { display: none !important; }
+      .report-wrap { display: block !important; }
+      .report-content {
+        box-shadow: none;
+        padding: 0;
+      }
+      body { background: white; }
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 600px) {
+      .logo { font-size: 1.5rem; }
+      .report-content { padding: 20px 16px; }
+      .drop-zone { padding: 32px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Radar<span>Finanziario</span></div>
+  <p class="tagline">Controllo di gestione infrannuale per PMI</p>
+</header>
+
+<main>
+
+  <!-- DISCLAIMER -->
+  <div class="banner banner-disclaimer">
+    ⚠️ <strong>Dati provvisori.</strong>
+    I dati infrannuali sono provvisori. Le proiezioni hanno valore indicativo
+    e non sostituiscono la consulenza professionale del tuo commercialista o consulente aziendale.
+  </div>
+
+  <!-- PRIVACY -->
+  <div class="banner banner-privacy">
+    🔒 <strong>Privacy.</strong>
+    Il documento viene elaborato in memoria e non viene salvato su disco.
+    I dati non sono condivisi né usati per addestrare sistemi AI.
+  </div>
+
+  <!-- UPLOAD CARD -->
+  <div class="upload-card" id="uploadCard">
+    <h2>Carica la situazione contabile infrannuale</h2>
+
+    <div class="drop-zone" id="dropZone">
+      <input type="file" id="fileInput" accept=".pdf,.xlsx,.xls,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" />
+      <span class="drop-icon">📊</span>
+      <p class="drop-title">Trascina qui il file o clicca per selezionarlo</p>
+      <p class="drop-hint">
+        Carica la <strong>situazione contabile infrannuale</strong><br>
+        fornita dal tuo commercialista
+      </p>
+      <p class="file-types">
+        <span class="badge">PDF</span>
+        <span class="badge badge-green">XLSX</span>
+        <span class="badge badge-green">XLS</span>
+        &nbsp;· Limite 10 MB · Solo documenti in formato digitale (non scansioni)
+      </p>
+    </div>
+
+    <div class="file-selected" id="fileSelected">
+      <span>📎</span>
+      <span id="fileName"></span>
+    </div>
+
+    <button class="btn-analyze" id="btnAnalyze" disabled>
+      🔍&nbsp; Analizza con AI
+    </button>
+  </div>
+
+  <!-- SPINNER -->
+  <div class="spinner-wrap" id="spinnerWrap">
+    <div class="spinner"></div>
+    <p class="spinner-msg">Analisi in corso — elaborazione dati...</p>
+    <p class="spinner-sub">Possono volerci 20–40 secondi</p>
+  </div>
+
+  <!-- ERROR -->
+  <div class="error-box" id="errorBox">
+    <strong>❌ Errore</strong>
+    <span id="errorMsg"></span>
+  </div>
+
+  <!-- REPORT -->
+  <div class="report-wrap" id="reportWrap">
+    <div class="report-actions">
+      <h2>📋 Report di Analisi</h2>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn-print" onclick="window.print()">🖨️ Stampa Report</button>
+        <button class="btn-reset" id="btnReset">↩ Nuova Analisi</button>
+      </div>
+    </div>
+    <div class="report-content" id="reportContent"></div>
+  </div>
+
+</main>
+
+<footer>
+  RadarFinanziario &copy; 2025 &mdash; Analisi AI basata su Claude (Anthropic) &mdash;
+  Per uso interno aziendale. Non costituisce consulenza finanziaria o fiscale.
+</footer>
+
+<script>
+  const dropZone    = document.getElementById('dropZone');
+  const fileInput   = document.getElementById('fileInput');
+  const fileSelected = document.getElementById('fileSelected');
+  const fileNameEl  = document.getElementById('fileName');
+  const btnAnalyze  = document.getElementById('btnAnalyze');
+  const spinnerWrap = document.getElementById('spinnerWrap');
+  const errorBox    = document.getElementById('errorBox');
+  const errorMsg    = document.getElementById('errorMsg');
+  const reportWrap  = document.getElementById('reportWrap');
+  const reportContent = document.getElementById('reportContent');
+  const uploadCard  = document.getElementById('uploadCard');
+  const btnReset    = document.getElementById('btnReset');
+
+  let selectedFile = null;
+
+  // Drag & drop
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) handleFile(file);
+  });
+
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files[0]) handleFile(fileInput.files[0]);
+  });
+
+  function handleFile(file) {
+    const allowed = ['application/pdf',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-excel'];
+    const ext = file.name.split('.').pop().toLowerCase();
+    const okExt = ['pdf','xlsx','xls'].includes(ext);
+    const okType = allowed.some(t => file.type.includes(t)) || file.type === '';
+
+    if (!okExt && !okType) {
+      showError('Formato non supportato. Carica un PDF o un file Excel (.xlsx, .xls).');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      showError('Il file supera il limite di 10 MB.');
+      return;
+    }
+
+    hideError();
+    selectedFile = file;
+    fileNameEl.textContent = `${file.name} (${(file.size / 1024).toFixed(0)} KB)`;
+    fileSelected.classList.add('visible');
+    btnAnalyze.disabled = false;
+  }
+
+  btnAnalyze.addEventListener('click', analyzeFile);
+
+  async function analyzeFile() {
+    if (!selectedFile) return;
+
+    // UI state: loading
+    uploadCard.style.display = 'none';
+    hideError();
+    hideReport();
+    spinnerWrap.classList.add('visible');
+
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+
+    try {
+      const response = await fetch('/api/analyze', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || data.error) {
+        throw new Error(data.error || `Errore HTTP ${response.status}`);
+      }
+
+      showReport(data.html);
+    } catch (err) {
+      spinnerWrap.classList.remove('visible');
+      uploadCard.style.display = '';
+      showError(err.message || 'Errore sconosciuto. Riprova.');
+    }
+  }
+
+  function showReport(html) {
+    spinnerWrap.classList.remove('visible');
+    reportContent.innerHTML = html;
+    reportWrap.classList.add('visible');
+    reportWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function hideReport() {
+    reportWrap.classList.remove('visible');
+    reportContent.innerHTML = '';
+  }
+
+  function showError(msg) {
+    errorMsg.textContent = msg;
+    errorBox.classList.add('visible');
+    errorBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function hideError() {
+    errorBox.classList.remove('visible');
+  }
+
+  btnReset.addEventListener('click', () => {
+    hideReport();
+    hideError();
+    selectedFile = null;
+    fileInput.value = '';
+    fileSelected.classList.remove('visible');
+    fileNameEl.textContent = '';
+    btnAnalyze.disabled = true;
+    uploadCard.style.display = '';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+</script>
+
+</body>
+</html>

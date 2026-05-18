@@ -1,0 +1,22 @@
+{
+  "name": "radarfinanziario",
+  "version": "1.0.0",
+  "description": "Analisi situazioni contabili infrannuali per PMI italiane tramite Claude AI",
+  "main": "api/analyze.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.56.0",
+    "dotenv": "^16.5.0",
+    "pdf-parse": "^1.1.1",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "vercel": "^44.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

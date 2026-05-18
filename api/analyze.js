@@ -145,7 +145,6 @@ Copia questo blocco HTML esattamente come scritto in fondo al report,
 sostituendo [Ragione Sociale] con la ragione sociale rilevata dal documento:
 
 <hr>
-<h2>Passo Successivo Consigliato</h2>
 <p>Questa analisi proietta la traiettoria di <strong>[Ragione Sociale]</strong> sulla base dei dati infrannuali disponibili.</p>
 <p>I numeri indicano la direzione. Ora serve la rotta.</p>
 <p>Per capire <em>perché</em> la traiettoria è quella rilevata — e <em>come</em> correggerla — il <strong>Check-Up Margine e Rischi di Castelli Consulting</strong> identifica le cause operative dei KPI in sofferenza e costruisce una roadmap concreta a 90 giorni.</p>

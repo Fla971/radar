@@ -129,16 +129,16 @@ Lista chiara di cosa richiedere al commercialista per completare l'analisi:
 Giudizio sulla traiettoria attuale:
 IN LINEA CON OBIETTIVI / ATTENZIONE RICHIESTA / INTERVENTO URGENTE NECESSARIO
 
-## 10. PASSO SUCCESSIVO CONSIGLIATO (obbligatorio, sempre incluso)
-Includi SEMPRE in fondo al report esattamente questo blocco HTML
-(sostituisci [Ragione Sociale] con quella rilevata dal documento):
+## 10. PASSO SUCCESSIVO CONSIGLIATO (OBBLIGATORIO — includi SEMPRE, è parte integrante del report)
+Copia questo blocco HTML esattamente come scritto in fondo al report,
+sostituendo [Ragione Sociale] con la ragione sociale rilevata dal documento:
 
 <hr>
 <h2>Passo Successivo Consigliato</h2>
 <p>Questa analisi proietta la traiettoria di <strong>[Ragione Sociale]</strong> sulla base dei dati infrannuali disponibili.</p>
-<p>Hai già il radar. Ora ti serve la rotta.</p>
-<p>Per trasformare queste proiezioni in azioni concrete con impatto misurabile sul margine operativo, il <strong>Check-Up Margine e Rischi</strong> di Castelli Consulting è il passo naturale: identifica le cause operative e costruisce una roadmap a 90 giorni.</p>
-<p>📧 <strong>flavio@castelliconsulting.it</strong></p>
+<p>I numeri indicano la direzione. Ora serve la rotta.</p>
+<p>Per capire <em>perché</em> la traiettoria è quella rilevata — e <em>come</em> correggerla — il <strong>Check-Up Margine e Rischi di Castelli Consulting</strong> identifica le cause operative dei KPI in sofferenza e costruisce una roadmap concreta a 90 giorni.</p>
+<p>Scrivi a: <strong>fcastelli@castelliconsulting.it</strong><br>oppure visita <strong>https://www.castelliconsulting.it/check-up-strategico/</strong></p>
 <hr>`;
 
 function parseMultipart(body, boundary) {

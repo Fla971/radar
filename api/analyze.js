@@ -127,7 +127,19 @@ Lista chiara di cosa richiedere al commercialista per completare l'analisi:
 ## 9. SINTESI DIREZIONALE
 4 righe massimo.
 Giudizio sulla traiettoria attuale:
-IN LINEA CON OBIETTIVI / ATTENZIONE RICHIESTA / INTERVENTO URGENTE NECESSARIO`;
+IN LINEA CON OBIETTIVI / ATTENZIONE RICHIESTA / INTERVENTO URGENTE NECESSARIO
+
+## 10. PASSO SUCCESSIVO CONSIGLIATO (obbligatorio, sempre incluso)
+Includi SEMPRE in fondo al report esattamente questo blocco HTML
+(sostituisci [Ragione Sociale] con quella rilevata dal documento):
+
+<hr>
+<h2>Passo Successivo Consigliato</h2>
+<p>Questa analisi proietta la traiettoria di <strong>[Ragione Sociale]</strong> sulla base dei dati infrannuali disponibili.</p>
+<p>Hai già il radar. Ora ti serve la rotta.</p>
+<p>Per trasformare queste proiezioni in azioni concrete con impatto misurabile sul margine operativo, il <strong>Check-Up Margine e Rischi</strong> di Castelli Consulting è il passo naturale: identifica le cause operative e costruisce una roadmap a 90 giorni.</p>
+<p>📧 <strong>flavio@castelliconsulting.it</strong></p>
+<hr>`;
 
 function parseMultipart(body, boundary) {
   const parts = [];
@@ -278,7 +290,7 @@ ${extractedText.slice(0, 80000)}
   try {
     const message = await client.messages.create({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 4096,
+      max_tokens: 8192,
       system: SYSTEM_PROMPT,
       messages: [{ role: 'user', content: userMessage }],
     });

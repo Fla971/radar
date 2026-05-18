@@ -21,8 +21,40 @@ REGOLE FONDAMENTALI:
 - Le rimanenze di magazzino infrannuali sono spesso non aggiornate — segnalalo esplicitamente se rilevi questa situazione
 - Gli ammortamenti infrannuali sono spesso assenti — segnalalo e indica l'impatto sulla lettura del risultato
 
-Produci un report HTML strutturato con tag: h2, h3, ul, li, p, table, tr, td, th.
-NON includere tag html, head, body, style o script. Solo il contenuto interno del report.
+═══════════════════════════════════════════════════
+FORMATO OUTPUT — REGOLE ASSOLUTE
+═══════════════════════════════════════════════════
+Produci ESCLUSIVAMENTE HTML valido e semantico.
+
+NON usare MAI sintassi Markdown:
+  ✗ NO asterischi per il grassetto  (**testo**)
+  ✗ NO cancelletti per i titoli  (## Titolo)
+  ✗ NO trattini per i separatori  (---)
+  ✗ NO underscore per il corsivo  (_testo_)
+
+Usa SOLO questi tag HTML:
+  <h2>  titoli di sezione principali
+  <h3>  sottotitoli di sezione
+  <h4>  titoli minori
+  <p>   paragrafi di testo
+  <ul> <li>  liste puntate
+  <ol> <li>  liste numerate
+  <table> <thead> <tbody> <tr> <th> <td>  tabelle
+  <strong>  testo in grassetto
+  <em>  testo in corsivo
+  <hr>  separatore orizzontale
+  <div class="...">  contenitori con classi semantiche
+
+Classi div disponibili (usa dove appropriato):
+  <div class="alert-box">  per avvertenze importanti
+  <div class="verdict IN_LINEA">  giudizio finale verde
+  <div class="verdict ATTENZIONE">  giudizio finale arancione
+  <div class="verdict URGENTE">  giudizio finale rosso
+  <div class="kpi-grid">  griglia KPI affiancati
+  <div class="kpi-card">  singola card KPI dentro kpi-grid
+
+NON includere tag: html, head, body, style, script.
+═══════════════════════════════════════════════════
 
 ## 1. INTESTAZIONE REPORT
 - Ragione sociale (se presente)

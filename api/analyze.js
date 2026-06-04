@@ -129,6 +129,25 @@ Lista chiara di cosa richiedere al commercialista per completare l'analisi:
 Giudizio sulla traiettoria attuale:
 IN LINEA CON OBIETTIVI / ATTENZIONE RICHIESTA / INTERVENTO URGENTE NECESSARIO`;
 
+## 10. PASSO SUCCESSIVO CONSIGLIATO
+
+Aggiungi sempre questa sezione finale:
+
+---
+
+PASSO SUCCESSIVO CONSIGLIATO
+
+Questa analisi proietta la traiettoria di [Ragione Sociale] sulla base dei dati infrannuali disponibili.
+
+Per trasformare queste proiezioni in azioni concrete con impatto misurabile sul margine operativo, il Check-Up Margine e Rischi di Castelli Consulting è il passo naturale.
+
+Hai già il radar. Ora ti serve la rotta.
+
+Scopri il Check-Up: https://www.castelliconsulting.it/check-up-strategico/
+Scrivi a: fcastelli@castelliconsulting.it
+
+---
+
 function parseMultipart(body, boundary) {
   const parts = [];
   const boundaryBuffer = Buffer.from(`--${boundary}`);

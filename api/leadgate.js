@@ -29,6 +29,15 @@ async function sbloccaReport(supabase, { analisiId, nome, email, consenso, ip })
   if (!email || !nome)     return { ok: false, motivo: 'Nome e email obbligatori.' };
   if (!consenso)           return { ok: false, motivo: 'È necessario il consenso per procedere.' };
 
+  // Validate UUID format before querying Supabase
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(String(analisiId))) {
+    console.error('sbloccaReport: analisiId non è un UUID valido:', analisiId);
+    return { ok: false, motivo: 'ID analisi non valido.' };
+  }
+
+  console.log('sbloccaReport: cercando analisiId =', analisiId);
+
   const { data, error } = await supabase
     .from('analisi_temp')
     .select('*')
@@ -36,7 +45,7 @@ async function sbloccaReport(supabase, { analisiId, nome, email, consenso, ip })
     .maybeSingle();
 
   if (error) {
-    console.error('sbloccaReport SELECT error:', error.message);
+    console.error('sbloccaReport SELECT error:', error.message, '| code:', error.code, '| details:', error.details, '| hint:', error.hint);
     return { ok: false, motivo: 'Errore nel recupero dell\'analisi: ' + error.message };
   }
   if (!data) return { ok: false, motivo: 'Analisi non trovata o scaduta.' };

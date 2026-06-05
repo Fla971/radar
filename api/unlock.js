@@ -23,6 +23,8 @@ module.exports = async function handler(req, res) {
   const { analisiId, nome, email, consenso } = body;
   const ip = req.headers['x-forwarded-for'] || req.socket?.remoteAddress;
 
+  console.log('unlock: analisiId ricevuto =', analisiId, '| tipo =', typeof analisiId);
+
   const supabase = createClient(
     process.env.SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY

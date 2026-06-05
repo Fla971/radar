@@ -6,6 +6,7 @@ const Anthropic = require('@anthropic-ai/sdk');
 const { createClient } = require('@supabase/supabase-js');
 const pdfParse = require('pdf-parse');
 const XLSX = require('xlsx');
+const { spezzaReport, salvaAnalisiTemp } = require('./leadgate');
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 const MIN_TEXT_LENGTH = 200;
@@ -83,6 +84,8 @@ Aree da valutare:
 - Ammortamenti
 - Risultato netto stimato
 
+Subito dopo la tabella affidabilità inserisci su una riga da solo, senza altri caratteri: <!--GATE-->
+
 ## 3. SITUAZIONE ATTUALE (solo dati affidabili)
 
 ### Ricavi YTD
@@ -154,11 +157,13 @@ FORMATO RISPOSTA FINALE — OBBLIGATORIO
 Rispondi ESCLUSIVAMENTE con un oggetto JSON valido in questo formato:
 {
   "ragioneSociale": "Nome Azienda S.r.l.",
+  "esito": "ATTENZIONE",
   "report": "...tutto l'HTML del report..."
 }
 
-- "ragioneSociale": la ragione sociale rilevata dal documento, o "Azienda" se assente
-- "report": l'intero report HTML (sezioni 1-9), come stringa JSON escaped
+- "ragioneSociale": ragione sociale rilevata dal documento, o "Azienda" se assente
+- "esito": UNO di questi valori esatti → "IN_LINEA" | "ATTENZIONE" | "URGENTE"
+- "report": l'intero report HTML (sezioni 1-9 con <!--GATE--> dopo la sezione 2), come stringa JSON escaped
 - Nessun testo fuori dal JSON, nessun markdown wrapper (\`\`\`json)
 ═══════════════════════════════════════════════════`;
 
@@ -376,9 +381,10 @@ DOCUMENTO ESTRATTO:
 ${extractedText.slice(0, 80000)}
 ---`;
 
-  let reportHtml = '';
+  let reportHtml    = '';
   let ragioneSociale = 'Azienda';
-  let esito = 'errore';
+  let esitoReport   = '';   // IN_LINEA | ATTENZIONE | URGENTE
+  let esito         = 'errore'; // ok | errore (per log Supabase)
 
   try {
     const message = await client.messages.create({
@@ -398,10 +404,10 @@ ${extractedText.slice(0, 80000)}
     if (jsonMatch) {
       try {
         const parsed = JSON.parse(jsonMatch[0]);
-        reportHtml = parsed.report || rawText;
+        reportHtml    = parsed.report || rawText;
         ragioneSociale = (parsed.ragioneSociale || '').trim() || 'Azienda';
+        esitoReport    = parsed.esito || '';
       } catch {
-        // Fallback: tratta tutta la risposta come HTML
         reportHtml = rawText;
       }
     } else {
@@ -426,7 +432,7 @@ ${extractedText.slice(0, 80000)}
     return res.status(500).json({ error: "Errore durante l'analisi AI. Riprova tra qualche istante." });
   }
 
-  // Appendi CTA deterministica (mai generata da Claude)
+  // CTA deterministica (mai generata da Claude)
   const sezioneFinale = valido
     ? bloccoCoFirmato(nomeStudio, ragioneSociale)
     : ctaDiretta(ragioneSociale);
@@ -436,5 +442,23 @@ ${extractedText.slice(0, 80000)}
   // Log utilizzo su Supabase
   await logUtilizzo({ token: tokenGrezzo, nomeStudio, ragioneSociale, esito });
 
-  return res.status(200).json({ html: reportCompleto });
+  // Token valido → report completo subito
+  if (valido) {
+    return res.status(200).json({ gated: false, html: reportCompleto });
+  }
+
+  // Nessun token → gate: salva report, restituisci solo anteprima
+  try {
+    const analisiId = await salvaAnalisiTemp(supabase, {
+      reportCompleto,
+      ragioneSociale,
+      esito: esitoReport,
+    });
+    const { anteprima } = spezzaReport(reportCompleto);
+    return res.status(200).json({ gated: true, analisiId, anteprima });
+  } catch (e) {
+    console.error('salvaAnalisiTemp fallito:', e.message);
+    // Fallback: mostra il report completo se il salvataggio fallisce
+    return res.status(200).json({ gated: false, html: reportCompleto });
+  }
 };

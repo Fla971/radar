@@ -450,6 +450,96 @@
       background: var(--white);
     }
 
+    /* ── GATE ── */
+    .gate-blurred {
+      filter: blur(5px);
+      user-select: none;
+      pointer-events: none;
+      opacity: 0.5;
+      min-height: 260px;
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 28px 40px;
+      line-height: 1.65;
+      margin-top: 16px;
+      font-size: 0.93rem;
+      color: var(--gray-700);
+    }
+    .gate-overlay {
+      position: relative;
+      margin-top: -200px;
+      background: linear-gradient(180deg, rgba(255,255,255,0) 0%, #fff 28%);
+      padding: 80px 20px 0;
+      text-align: center;
+    }
+    .gate-card {
+      max-width: 460px;
+      margin: 0 auto 32px;
+      background: var(--white);
+      border: 1.5px solid var(--gray-200);
+      border-radius: var(--radius);
+      padding: 32px;
+      box-shadow: var(--shadow-lg);
+    }
+    .gate-card h3 {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--navy);
+      margin-bottom: 10px;
+    }
+    .gate-card p {
+      color: var(--gray-600);
+      font-size: 0.95rem;
+      margin-bottom: 20px;
+      line-height: 1.55;
+    }
+    .gate-card input[type="text"],
+    .gate-card input[type="email"] {
+      width: 100%;
+      padding: 13px 15px;
+      margin-bottom: 11px;
+      border: 1.5px solid var(--gray-200);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      color: var(--gray-900);
+      transition: border-color .15s;
+    }
+    .gate-card input:focus { outline: none; border-color: var(--navy); }
+    .gate-consenso {
+      display: flex;
+      gap: 10px;
+      text-align: left;
+      font-size: 0.87rem;
+      color: var(--gray-600);
+      margin-bottom: 20px;
+      align-items: flex-start;
+      line-height: 1.5;
+    }
+    .gate-consenso input[type="checkbox"] {
+      margin-top: 2px;
+      flex-shrink: 0;
+      accent-color: var(--navy);
+    }
+    .gate-btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 9px;
+      cursor: pointer;
+      background: var(--navy);
+      color: var(--white);
+      font-size: 1rem;
+      font-weight: 700;
+      font-family: inherit;
+      transition: background .15s;
+    }
+    .gate-btn:hover:not(:disabled) { background: var(--navy-light); }
+    .gate-btn:disabled { background: var(--gray-200); color: var(--gray-300); cursor: not-allowed; }
+    .gate-errore { color: var(--red); font-size: 0.83rem; margin-top: 10px; min-height: 1em; }
+
+    @media print { .gate-blurred, .gate-overlay { display: none !important; } }
+
     /* ── PRINT ── */
     @media print {
       header, .banner, .upload-card, .spinner-wrap,
@@ -567,6 +657,32 @@
       </div>
     </div>
     <div class="report-content" id="reportContent"></div>
+
+    <!-- Gate: visibile solo per utenti pubblici (senza token) -->
+    <div id="zonaGate" style="display:none;">
+      <div class="gate-blurred" aria-hidden="true">
+        <p>Situazione attuale ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░</p>
+        <p>Ricavi YTD e proiezione fine anno ░░░░░░░░░░░░░░░░░</p>
+        <p>Segnali di allerta ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░</p>
+        <p>Azioni prioritarie entro 30-60 giorni ░░░░░░░░░░░░░</p>
+        <p>Domande per la prossima riunione ░░░░░░░░░░░░░░░░░░</p>
+        <p>░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░</p>
+      </div>
+      <div class="gate-overlay">
+        <div class="gate-card">
+          <h3>Vuoi il report completo?</h3>
+          <p>Lascia nome ed email: ti inviamo subito l'analisi completa con proiezioni, segnali di allerta e azioni prioritarie.</p>
+          <input id="gNome"  type="text"  placeholder="Nome e cognome" autocomplete="name" />
+          <input id="gEmail" type="email" placeholder="La tua email"   autocomplete="email" />
+          <label class="gate-consenso">
+            <input id="gConsenso" type="checkbox" />
+            <span>Acconsento a ricevere da Castelli Consulting consigli e indicazioni gestionali via email.</span>
+          </label>
+          <button id="gBtn" class="gate-btn" disabled>Ricevi il report completo</button>
+          <div id="gErrore" class="gate-errore"></div>
+        </div>
+      </div>
+    </div>
   </div>
 
 </main>
@@ -585,6 +701,52 @@
   const spinnerWrap = document.getElementById('spinnerWrap');
   const errorBox    = document.getElementById('errorBox');
   const errorMsg    = document.getElementById('errorMsg');
+
+  // Gate elements
+  const zonaGate  = document.getElementById('zonaGate');
+  const gNome     = document.getElementById('gNome');
+  const gEmail    = document.getElementById('gEmail');
+  const gConsenso = document.getElementById('gConsenso');
+  const gBtn      = document.getElementById('gBtn');
+  const gErrore   = document.getElementById('gErrore');
+  let   analisiId = null;
+
+  function aggiornaBottoneGate() {
+    gBtn.disabled = !(gNome.value.trim() && gEmail.value.trim() && gConsenso.checked);
+  }
+  [gNome, gEmail].forEach(el => el.addEventListener('input', aggiornaBottoneGate));
+  gConsenso.addEventListener('change', aggiornaBottoneGate);
+
+  gBtn.addEventListener('click', async () => {
+    gBtn.disabled = true;
+    gErrore.textContent = '';
+    try {
+      const r = await fetch('/api/unlock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          analisiId,
+          nome:     gNome.value.trim(),
+          email:    gEmail.value.trim(),
+          consenso: gConsenso.checked,
+        }),
+      });
+      const data = await r.json();
+      if (!data.ok) throw new Error(data.motivo || 'Errore. Riprova.');
+      zonaGate.innerHTML = `
+        <div style="text-align:center;padding:2.5rem 1rem;">
+          <div style="font-size:2.5rem;margin-bottom:.75rem;">📧</div>
+          <h3 style="font-size:1.3rem;color:var(--navy);margin-bottom:.5rem;">Report inviato!</h3>
+          <p style="color:var(--gray-600);font-size:0.95rem;max-width:420px;margin:0 auto;">
+            Il report completo è stato inviato a <strong>${gEmail.value.trim()}</strong>.<br>
+            Controlla la tua casella di posta (e la cartella spam).
+          </p>
+        </div>`;
+    } catch (e) {
+      gErrore.textContent = e.message;
+      gBtn.disabled = false;
+    }
+  });
   const reportWrap  = document.getElementById('reportWrap');
   const reportContent = document.getElementById('reportContent');
   const uploadCard  = document.getElementById('uploadCard');
@@ -660,7 +822,12 @@
         throw new Error(data.error || `Errore HTTP ${response.status}`);
       }
 
-      showReport(data.html);
+      if (data.gated) {
+        analisiId = data.analisiId;
+        showReport(data.anteprima, true);
+      } else {
+        showReport(data.html, false);
+      }
     } catch (err) {
       spinnerWrap.classList.remove('visible');
       uploadCard.style.display = '';
@@ -668,10 +835,11 @@
     }
   }
 
-  function showReport(html) {
+  function showReport(html, gated) {
     spinnerWrap.classList.remove('visible');
     reportContent.innerHTML = html;
     reportWrap.classList.add('visible');
+    zonaGate.style.display = gated ? 'block' : 'none';
     reportWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
@@ -694,6 +862,8 @@
     hideReport();
     hideError();
     selectedFile = null;
+    analisiId = null;
+    zonaGate.style.display = 'none';
     fileInput.value = '';
     fileSelected.classList.remove('visible');
     fileNameEl.textContent = '';

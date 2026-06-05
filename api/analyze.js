@@ -181,7 +181,7 @@ function ctaDiretta(ragioneSociale) {
 <h2>Passo Successivo Consigliato</h2>
 <p>Questa proiezione mostra dove sta andando <strong>${ragioneSociale}</strong> se la rotta non cambia.</p>
 <p>I numeri dicono cosa sta succedendo. Per capire perché e intervenire in tempo, il <strong>Check-Up Margine e Rischi di Castelli Consulting</strong> individua le cause operative e costruisce una roadmap concreta a 90 giorni.</p>
-<p>Scopri il Check-Up: <strong>https://www.castelliconsulting.it/check-up-strategico/</strong><br>Scrivi a: <strong>fcastelli@castelliconsulting.it</strong></p>
+<p>Scopri il Check-Up: <a href="https://www.castelliconsulting.it/check-up-strategico/" target="_blank" rel="noopener">www.castelliconsulting.it/check-up-strategico/</a><br>Scrivi a: <a href="mailto:fcastelli@castelliconsulting.it">fcastelli@castelliconsulting.it</a></p>
 <hr>`;
 }
 

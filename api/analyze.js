@@ -448,6 +448,11 @@ ${extractedText.slice(0, 80000)}
   }
 
   // Nessun token → gate: salva report, restituisci solo anteprima
+  if (!supabase) {
+    console.error('Gate non attivo: SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY mancanti su Vercel');
+    return res.status(500).json({ error: 'Configurazione server incompleta (Supabase). Contatta l\'amministratore.' });
+  }
+
   try {
     const analisiId = await salvaAnalisiTemp(supabase, {
       reportCompleto,
@@ -458,7 +463,6 @@ ${extractedText.slice(0, 80000)}
     return res.status(200).json({ gated: true, analisiId, anteprima });
   } catch (e) {
     console.error('salvaAnalisiTemp fallito:', e.message);
-    // Fallback: mostra il report completo se il salvataggio fallisce
-    return res.status(200).json({ gated: false, html: reportCompleto });
+    return res.status(500).json({ error: 'Errore nel salvataggio dell\'analisi: ' + e.message });
   }
 };

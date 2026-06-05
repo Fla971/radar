@@ -146,7 +146,21 @@ Se richiede intervento urgente:
 <div class="verdict URGENTE">INTERVENTO URGENTE NECESSARIO</div>
 <p>[testo descrittivo della situazione, tono professionale e diretto]</p>
 
-Il report termina qui. NON aggiungere sezioni successive.`;
+Il report termina qui. NON aggiungere sezioni successive.
+
+═══════════════════════════════════════════════════
+FORMATO RISPOSTA FINALE — OBBLIGATORIO
+═══════════════════════════════════════════════════
+Rispondi ESCLUSIVAMENTE con un oggetto JSON valido in questo formato:
+{
+  "ragioneSociale": "Nome Azienda S.r.l.",
+  "report": "...tutto l'HTML del report..."
+}
+
+- "ragioneSociale": la ragione sociale rilevata dal documento, o "Azienda" se assente
+- "report": l'intero report HTML (sezioni 1-9), come stringa JSON escaped
+- Nessun testo fuori dal JSON, nessun markdown wrapper (\`\`\`json)
+═══════════════════════════════════════════════════`;
 
 // ── CTA HTML: versione co-firmata (token valido) ──────────────────────────
 function bloccoCoFirmato(nomeStudio, ragioneSociale) {
@@ -206,12 +220,6 @@ async function logUtilizzo({ token, nomeStudio, ragioneSociale, esito }) {
   } catch (e) {
     console.error('Log utilizzo Radar fallito:', e.message);
   }
-}
-
-// ── Estrae ragione sociale dall'HTML generato ─────────────────────────────
-function estraiRagioneSociale(html) {
-  const match = html.match(/<h[123][^>]*>\s*([^<]{3,80}?)\s*<\/h[123]>/i);
-  return match ? match[1].trim() : '[Ragione Sociale]';
 }
 
 // ── Parsing multipart ─────────────────────────────────────────────────────
@@ -369,6 +377,7 @@ ${extractedText.slice(0, 80000)}
 ---`;
 
   let reportHtml = '';
+  let ragioneSociale = 'Azienda';
   let esito = 'errore';
 
   try {
@@ -379,10 +388,25 @@ ${extractedText.slice(0, 80000)}
       messages: [{ role: 'user', content: userMessage }],
     });
 
-    reportHtml = message.content
+    const rawText = message.content
       .filter(block => block.type === 'text')
       .map(block => block.text)
       .join('');
+
+    // Estrai JSON dalla risposta (Claude a volte aggiunge whitespace o backtick)
+    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      try {
+        const parsed = JSON.parse(jsonMatch[0]);
+        reportHtml = parsed.report || rawText;
+        ragioneSociale = (parsed.ragioneSociale || '').trim() || 'Azienda';
+      } catch {
+        // Fallback: tratta tutta la risposta come HTML
+        reportHtml = rawText;
+      }
+    } else {
+      reportHtml = rawText;
+    }
 
     esito = 'ok';
   } catch (err) {
@@ -401,9 +425,6 @@ ${extractedText.slice(0, 80000)}
     }
     return res.status(500).json({ error: "Errore durante l'analisi AI. Riprova tra qualche istante." });
   }
-
-  // Estrai ragione sociale per CTA e log
-  const ragioneSociale = estraiRagioneSociale(reportHtml);
 
   // Appendi CTA deterministica (mai generata da Claude)
   const sezioneFinale = valido

@@ -3,11 +3,17 @@
 require('dotenv').config();
 
 const Anthropic = require('@anthropic-ai/sdk');
+const { createClient } = require('@supabase/supabase-js');
 const pdfParse = require('pdf-parse');
 const XLSX = require('xlsx');
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 const MIN_TEXT_LENGTH = 200;
+
+// Supabase client — stesso DB di BalanceScan, service_role key
+const supabase = (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY)
+  ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
+  : null;
 
 const SYSTEM_PROMPT = `Sei un controller di gestione esperto in PMI italiane manifatturiere con 20 anni di esperienza.
 
@@ -140,17 +146,75 @@ Se richiede intervento urgente:
 <div class="verdict URGENTE">INTERVENTO URGENTE NECESSARIO</div>
 <p>[testo descrittivo della situazione, tono professionale e diretto]</p>
 
-## 10. PASSO SUCCESSIVO CONSIGLIATO (OBBLIGATORIO — includi SEMPRE, è parte integrante del report)
-Copia questo blocco HTML esattamente come scritto in fondo al report,
-sostituendo [Ragione Sociale] con la ragione sociale rilevata dal documento:
+Il report termina qui. NON aggiungere sezioni successive.`;
 
+// ── CTA HTML: versione co-firmata (token valido) ──────────────────────────
+function bloccoCoFirmato(nomeStudio, ragioneSociale) {
+  return `
 <hr>
-<p>Questa analisi proietta la traiettoria di <strong>[Ragione Sociale]</strong> sulla base dei dati infrannuali disponibili.</p>
-<p>I numeri indicano la direzione. Ora serve la rotta.</p>
-<p>Per capire <em>perché</em> la traiettoria è quella rilevata — e <em>come</em> correggerla — il <strong>Check-Up Margine e Rischi di Castelli Consulting</strong> identifica le cause operative dei KPI in sofferenza e costruisce una roadmap concreta a 90 giorni.</p>
-<p>Scrivi a: <strong>fcastelli@castelliconsulting.it</strong><br>oppure visita <strong>https://www.castelliconsulting.it/check-up-strategico/</strong></p>
+<h2>Passo Successivo Consigliato</h2>
+<p>Questa proiezione mostra dove sta andando <strong>${ragioneSociale}</strong> se la rotta non cambia, e segnala i punti da tenere d'occhio prima della chiusura d'anno.</p>
+<p>I numeri dicono <em>cosa</em> sta succedendo. Per capire <em>perché</em> e intervenire in tempo, il passo naturale è una lettura operativa dei processi che generano questi risultati.</p>
+<p>Ne parli con <strong>${nomeStudio}</strong>, che segue questa analisi.</p>
+<p><em>Analisi operativa a cura di Castelli Consulting, partner tecnico per il margine e l'efficienza operativa.</em></p>
 <hr>`;
+}
 
+// ── CTA HTML: versione diretta (nessun token) ─────────────────────────────
+function ctaDiretta(ragioneSociale) {
+  return `
+<hr>
+<h2>Passo Successivo Consigliato</h2>
+<p>Questa proiezione mostra dove sta andando <strong>${ragioneSociale}</strong> se la rotta non cambia.</p>
+<p>I numeri dicono cosa sta succedendo. Per capire perché e intervenire in tempo, il <strong>Check-Up Margine e Rischi di Castelli Consulting</strong> individua le cause operative e costruisce una roadmap concreta a 90 giorni.</p>
+<p>Scopri il Check-Up: <strong>https://www.castelliconsulting.it/check-up-strategico/</strong><br>Scrivi a: <strong>fcastelli@castelliconsulting.it</strong></p>
+<hr>`;
+}
+
+// ── Validazione token commercialista ─────────────────────────────────────
+async function validaCommercialista(tokenGrezzo) {
+  if (!supabase || !tokenGrezzo) return { valido: false, nomeStudio: null };
+
+  const token = String(tokenGrezzo).replace(/[^a-f0-9]/gi, '').slice(0, 64);
+  if (!token) return { valido: false, nomeStudio: null };
+
+  const { data, error } = await supabase
+    .from('commercialisti')
+    .select('nome_studio, attivo, scadenza')
+    .eq('token', token)
+    .maybeSingle();
+
+  if (error || !data) return { valido: false, nomeStudio: null };
+
+  const nonScaduto = !data.scadenza || new Date(data.scadenza) >= new Date();
+  const valido = data.attivo && nonScaduto;
+
+  return { valido, nomeStudio: valido ? data.nome_studio : null };
+}
+
+// ── Log utilizzo (tabella condivisa con BalanceScan) ──────────────────────
+async function logUtilizzo({ token, nomeStudio, ragioneSociale, esito }) {
+  if (!supabase) return;
+  try {
+    await supabase.from('utilizzi_balancescan').insert({
+      token:           token || null,
+      nome_studio:     nomeStudio || null,
+      ragione_sociale: ragioneSociale || null,
+      esito:           esito || null,
+      app:             'radar',
+    });
+  } catch (e) {
+    console.error('Log utilizzo Radar fallito:', e.message);
+  }
+}
+
+// ── Estrae ragione sociale dall'HTML generato ─────────────────────────────
+function estraiRagioneSociale(html) {
+  const match = html.match(/<h[123][^>]*>\s*([^<]{3,80}?)\s*<\/h[123]>/i);
+  return match ? match[1].trim() : '[Ragione Sociale]';
+}
+
+// ── Parsing multipart ─────────────────────────────────────────────────────
 function parseMultipart(body, boundary) {
   const parts = [];
   const boundaryBuffer = Buffer.from(`--${boundary}`);
@@ -160,7 +224,7 @@ function parseMultipart(body, boundary) {
     const boundaryIdx = body.indexOf(boundaryBuffer, start);
     if (boundaryIdx === -1) break;
 
-    const headerStart = boundaryIdx + boundaryBuffer.length + 2; // skip \r\n
+    const headerStart = boundaryIdx + boundaryBuffer.length + 2;
     const headerEnd = body.indexOf(Buffer.from('\r\n\r\n'), headerStart);
     if (headerEnd === -1) break;
 
@@ -170,7 +234,7 @@ function parseMultipart(body, boundary) {
     const nextBoundaryIdx = body.indexOf(boundaryBuffer, contentStart);
     if (nextBoundaryIdx === -1) break;
 
-    const contentEnd = nextBoundaryIdx - 2; // strip trailing \r\n
+    const contentEnd = nextBoundaryIdx - 2;
     const content = body.slice(contentStart, contentEnd);
 
     const nameMatch = headers.match(/name="([^"]+)"/);
@@ -190,6 +254,7 @@ function parseMultipart(body, boundary) {
   return parts;
 }
 
+// ── Excel → testo strutturato ─────────────────────────────────────────────
 function xlsxToText(buffer) {
   const workbook = XLSX.read(buffer, { type: 'buffer' });
   const lines = [];
@@ -209,10 +274,14 @@ function xlsxToText(buffer) {
   return lines.join('\n');
 }
 
+// ── Handler principale ────────────────────────────────────────────────────
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Metodo non consentito' });
   }
+
+  // Token commercialista dalla querystring (?k=...)
+  const tokenGrezzo = req.query.k || null;
 
   // Collect raw body
   const chunks = [];
@@ -250,8 +319,7 @@ module.exports = async function handler(req, res) {
 
   if (!isPdf && !isExcel) {
     return res.status(415).json({
-      error:
-        'Formato file non supportato. Carica un PDF o un file Excel (.xlsx, .xls) esportato dal gestionale.',
+      error: 'Formato file non supportato. Carica un PDF o un file Excel (.xlsx, .xls) esportato dal gestionale.',
     });
   }
 
@@ -284,9 +352,12 @@ module.exports = async function handler(req, res) {
   if (!apiKey) {
     console.error('ANTHROPIC_API_KEY non configurata');
     return res.status(500).json({
-      error: 'Configurazione server incompleta. Contatta l\'amministratore.',
+      error: "Configurazione server incompleta. Contatta l'amministratore.",
     });
   }
+
+  // Validazione token (in parallelo con niente — non blocca la generazione)
+  const { valido, nomeStudio } = await validaCommercialista(tokenGrezzo);
 
   const client = new Anthropic({ apiKey });
 
@@ -297,6 +368,9 @@ DOCUMENTO ESTRATTO:
 ${extractedText.slice(0, 80000)}
 ---`;
 
+  let reportHtml = '';
+  let esito = 'errore';
+
   try {
     const message = await client.messages.create({
       model: 'claude-sonnet-4-20250514',
@@ -305,31 +379,41 @@ ${extractedText.slice(0, 80000)}
       messages: [{ role: 'user', content: userMessage }],
     });
 
-    const reportHtml = message.content
+    reportHtml = message.content
       .filter(block => block.type === 'text')
       .map(block => block.text)
       .join('');
 
-    return res.status(200).json({ html: reportHtml });
+    esito = 'ok';
   } catch (err) {
     console.error('Errore Claude API:', err);
 
+    await logUtilizzo({ token: tokenGrezzo, nomeStudio, ragioneSociale: null, esito: 'errore_ai' });
+
     if (err.status === 401) {
-      return res.status(500).json({ error: 'Chiave API non valida. Contatta l\'amministratore.' });
+      return res.status(500).json({ error: "Chiave API non valida. Contatta l'amministratore." });
     }
     if (err.status === 429) {
-      return res.status(429).json({
-        error: 'Troppe richieste. Attendi qualche secondo e riprova.',
-      });
+      return res.status(429).json({ error: 'Troppe richieste. Attendi qualche secondo e riprova.' });
     }
     if (err.status === 529 || err.message?.includes('overloaded')) {
-      return res.status(503).json({
-        error: 'Il servizio AI è temporaneamente sovraccarico. Riprova tra qualche minuto.',
-      });
+      return res.status(503).json({ error: 'Il servizio AI è temporaneamente sovraccarico. Riprova tra qualche minuto.' });
     }
-
-    return res.status(500).json({
-      error: 'Errore durante l\'analisi AI. Riprova tra qualche istante.',
-    });
+    return res.status(500).json({ error: "Errore durante l'analisi AI. Riprova tra qualche istante." });
   }
+
+  // Estrai ragione sociale per CTA e log
+  const ragioneSociale = estraiRagioneSociale(reportHtml);
+
+  // Appendi CTA deterministica (mai generata da Claude)
+  const sezioneFinale = valido
+    ? bloccoCoFirmato(nomeStudio, ragioneSociale)
+    : ctaDiretta(ragioneSociale);
+
+  const reportCompleto = reportHtml + sezioneFinale;
+
+  // Log utilizzo su Supabase
+  await logUtilizzo({ token: tokenGrezzo, nomeStudio, ragioneSociale, esito });
+
+  return res.status(200).json({ html: reportCompleto });
 };

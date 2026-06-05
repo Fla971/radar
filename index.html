@@ -644,8 +644,12 @@
     const formData = new FormData();
     formData.append('file', selectedFile);
 
+    // Passa token commercialista se presente nell'URL (?k=...)
+    const token = new URLSearchParams(window.location.search).get('k');
+    const endpoint = token ? `/api/analyze?k=${encodeURIComponent(token)}` : '/api/analyze';
+
     try {
-      const response = await fetch('/api/analyze', {
+      const response = await fetch(endpoint, {
         method: 'POST',
         body: formData,
       });
